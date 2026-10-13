@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+<script src="cobblestone.js"></script>
+<script>
+(async () => {
+    const key = cobblestone.generateKey()
+
+    const e = new cobblestone.Encrypter(key, "example context")
+    const ciphertext = await e.encrypt(new TextEncoder().encode("Hello, Cobblestone!"))
+
+    const d = new cobblestone.Decrypter(key, "example context")
+    const out = new TextDecoder().decode(await d.decrypt(ciphertext))
+    console.log(out)
+
+    globalThis.testDone = true
+})()
+</script>

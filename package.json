@@ -1,0 +1,62 @@
+{
+    "name": "cobblestone-encryption",
+    "version": "0.1.0",
+    "files": [
+        "dist/"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/FiloSottile/cobblestone.ts.git"
+    },
+    "type": "module",
+    "main": "./dist/index.js",
+    "exports": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "keywords": [
+        "cobblestone",
+        "chunked encryption",
+        "streaming encryption",
+        "cryptography"
+    ],
+    "dependencies": {
+        "@noble/ciphers": "^2.4.0",
+        "@noble/hashes": "^2.4.0"
+    },
+    "scripts": {
+        "test": "vitest --run",
+        "test:short": "vitest --run --project node",
+        "test:slow": "SLOW=1 vitest --run --project node",
+        "test:interop": "INTEROP=1 vitest --run --project node tests/interop.test.ts",
+        "examples:node": "cd tests/examples && npm install --omit=dev && npm run test:node",
+        "examples:bun": "cd tests/examples && bun install --production && bun run test:bun",
+        "examples:deno": "cd tests/examples && deno install && deno task test:deno",
+        "examples:yarn": "cd tests/examples && yarn install --prod && yarn test:node",
+        "examples:pnpm": "cd tests/examples && pnpm install --prod && pnpm test:node",
+        "examples:esbuild": "cd tests/examples && npm install && npm run test:esbuild",
+        "bench": "vitest bench --run",
+        "lint": "eslint .",
+        "serve": "esbuild wwwdev/index.ts --bundle --outdir=wwwdev/js --servedir=wwwdev --sourcemap",
+        "build": "tsc -p tsconfig.build.json",
+        "docs": "typedoc",
+        "prepublishOnly": "npm run build"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@fast-check/vitest": "0.5.0",
+        "@scure/base": "2.4.0",
+        "@stylistic/eslint-plugin": "5.10.0",
+        "@types/node": "26.6.5",
+        "@vitest/browser-webdriverio": "5.0.0",
+        "esbuild": "0.28.2",
+        "eslint": "10.12.0",
+        "eslint-plugin-tsdoc": "0.5.4",
+        "typedoc": "0.28.20",
+        "typedoc-plugin-markdown": "4.13.1",
+        "typescript": "5.9.3",
+        "typescript-eslint": "8.71.2",
+        "vitest": "5.0.4",
+        "webdriverio": "10.0.2"
+    },
+    "author": "Filippo Valsorda <npm@filippo.io> (https://filippo.io)",
+    "license": "BSD-3-Clause"
+}

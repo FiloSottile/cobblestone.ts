@@ -1,0 +1,102 @@
+name: Build and upload bundle
+on:
+  release:
+    types: [published]
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+          package-manager-cache: false
+      - uses: geomys/sandboxed-step@v1.2.1
+        with:
+          run: |
+            npm clean-install --ignore-scripts
+            npm run build
+            npm run lint
+            npm run test:short
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+          package-manager-cache: false
+      - run: npm clean-install --ignore-scripts
+      - run: npm run build
+      - run: node_modules/.bin/esbuild --target=es2023 --bundle --outfile=cobblestone.js --global-name=cobblestone cobblestone-encryption
+      - run: node_modules/.bin/esbuild --target=es2023 --bundle --minify --outfile=cobblestone.min.js --global-name=cobblestone cobblestone-encryption
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblestone-esbuild
+          path: |
+            cobblestone.js
+            cobblestone.min.js
+  upload:
+    if: github.event_name == 'release'
+    needs: [build, test]
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobblestone-esbuild
+      - run: |
+          mv cobblestone.js "cobblestone-${VERSION#v}.js"
+          mv cobblestone.min.js "cobblestone-${VERSION#v}.min.js"
+          gh release upload -R FiloSottile/cobblestone.ts "$VERSION" "cobblestone-*.js"
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: "cobblestone-*.js"
+  publish-npm:
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    needs: [build, test]
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+      - run: npm clean-install --ignore-scripts
+      - run: npm publish --access public
+  publish-jsr:
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    needs: [build, test]
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+          package-manager-cache: false
+      - run: npm clean-install --ignore-scripts
+      - run: npx jsr publish

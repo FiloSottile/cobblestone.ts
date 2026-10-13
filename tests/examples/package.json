@@ -1,0 +1,20 @@
+{
+    "name": "cobblestone-examples",
+    "type": "module",
+    "dependencies": {
+        "cobblestone-encryption": "file:../.."
+    },
+    "scripts": {
+        "test:node": "node basic.js && node stream.js",
+        "test:bun": "bun run basic.js && bun run stream.js",
+        "test:deno": "deno run basic.js && deno run stream.js",
+        "build:esbuild": "esbuild --target=es2023 --bundle --minify --outfile=cobblestone.js --global-name=cobblestone cobblestone-encryption",
+        "install:esbuild": "npx puppeteer browsers install chrome",
+        "test:esbuild": "npm run build:esbuild && npm run install:esbuild && node browser.js"
+    },
+    "devDependencies": {
+        "esbuild": "*",
+        "express": "5.3.0",
+        "puppeteer": "25.13.0"
+    }
+}

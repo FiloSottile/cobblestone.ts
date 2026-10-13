@@ -1,0 +1,122 @@
+name: Test
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "43 19 * * *"
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - 22.x # Maintenance LTS as of 2026-10
+          - 24.x # Active LTS as of 2026-10
+          - 26.x # Current as of 2026-10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: |
+          npm update
+          npm run build
+          npm run lint
+          npm run test
+          npm run examples:node
+  interop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache-dependency-path: tests/interop/go/go.sum
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - run: |
+          pip install cryptography
+          npm update
+          npm run build
+          npm run test:interop
+  esbuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+      - run: |
+          npm update
+          npm run build
+          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          npm run examples:esbuild
+  bun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+      - run: |
+          npm install -g bun
+          npm update
+          npm run build
+          npm run examples:bun
+  deno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+      - run: |
+          npm install -g deno
+          npm update
+          npm run build
+          npm run examples:deno
+  yarn:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+      - run: |
+          npm install -g yarn
+          npm update
+          npm run build
+          npm run examples:yarn
+  pnpm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.x # Current as of 2026-10
+      - run: |
+          npm install -g pnpm
+          npm update
+          npm run build
+          npm run examples:pnpm

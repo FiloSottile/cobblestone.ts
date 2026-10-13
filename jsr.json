@@ -1,0 +1,6 @@
+{
+    "name": "@cobblestone/cobblestone-encryption",
+    "version": "0.1.0",
+    "exports": "./lib/index.ts",
+    "license": "BSD-3-Clause"
+}

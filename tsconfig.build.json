@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "include": [
+        "lib"
+    ],
+    "compilerOptions": {
+        "outDir": "dist",
+        "declaration": true,
+        // Node 22, oldest Maintenance LTS as of 2026-10
+        // https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping#node-22
+        "target": "ES2023",
+        "module": "node20",
+    },
+}

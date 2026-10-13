@@ -1,0 +1,56 @@
+import eslint from "@eslint/js"
+import { defineConfig } from "eslint/config"
+import tseslint from "typescript-eslint"
+import stylistic from "@stylistic/eslint-plugin"
+import tsdoc from "eslint-plugin-tsdoc"
+
+export default defineConfig(
+    // Global ignores for generated files.
+    { ignores: ["dist/", "tests/examples/cobblestone.js"] },
+
+    eslint.configs.recommended,
+    tseslint.configs.strictTypeChecked,
+    tseslint.configs.stylisticTypeChecked,
+
+    {
+        languageOptions: {
+            parserOptions: {
+                projectService: {
+                    // Allow slow "default project" for .js config files in the root.
+                    allowDefaultProject: ["*.js"]
+                },
+                tsconfigRootDir: import.meta.dirname,
+            }
+        },
+        plugins: {
+            "@stylistic": stylistic,
+            "tsdoc": tsdoc
+        },
+        rules: {
+            "@stylistic/semi": ["error", "never"],
+            "@stylistic/quotes": ["error", "double", { "avoidEscape": true }],
+            "@stylistic/brace-style": ["error", "1tbs", { "allowSingleLine": true }],
+            "@stylistic/indent": ["error", 4],
+            "curly": ["error", "multi-line"],
+
+            "eqeqeq": "error",
+            "no-var": "error",
+            "prefer-const": "error",
+            "no-constant-binary-expression": "error",
+            "no-self-compare": "error",
+            "@typescript-eslint/no-unnecessary-condition": ["error", { allowConstantLoopConditions: "only-allowed-literals" }],
+
+            "tsdoc/syntax": "error"
+        }
+    },
+
+    // tsconfig.json (used by projectService) does not include .js files by default.
+    // Disable typed linting for the only .js files in the project, the examples.
+    {
+        files: ["tests/examples/*.js"],
+        extends: [tseslint.configs.disableTypeChecked],
+        rules: {
+            "no-undef": "off",
+        }
+    },
+)
