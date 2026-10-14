@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 26.x # Current as of 2026-10
           package-manager-cache: false
-      - uses: geomys/sandboxed-step@v1.2.1
+      - uses: geomys/sandboxed-step@v1.2.2
         with:
           run: |
             npm clean-install --ignore-scripts

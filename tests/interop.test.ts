@@ -2,7 +2,7 @@
 // pyca/cryptography (Python). They are skipped if the implementations are
 // not available, unless the INTEROP environment variable is set.
 
-import { describe, it, assert, expect } from "vitest"
+import { describe, it, assert, expect, beforeAll } from "vitest"
 import { randomBytes } from "@noble/hashes/utils.js"
 import { hex } from "@scure/base"
 import { Decrypter, Encrypter, generateKey } from "../lib/index.js"
@@ -16,6 +16,8 @@ type Operation = "encrypt" | "decrypt"
 interface Implementation {
     name: string
     available: () => Promise<boolean>
+    // prepare does slow one-time setup, like compiling a helper.
+    prepare?: () => Promise<void>
     run: (op: Operation, key: Uint8Array, context: Uint8Array, input: Uint8Array) => Promise<Uint8Array<ArrayBuffer>>
 }
 
@@ -51,6 +53,11 @@ const implementations: Implementation[] = [
     {
         name: "filippo.io/cobblestone",
         available: () => canExec("go", ["version"]),
+        // The first go run downloads and compiles the module, which can
+        // take longer than the test timeout.
+        prepare: async () => {
+            await exec("go", ["build", "-o", "/dev/null", "."], new Uint8Array(0), goDir)
+        },
         run: (op, key, context, input) => exec("go",
             ["run", ".", op, hex.encode(key), hex.encode(context)], input, goDir),
     },
@@ -70,6 +77,9 @@ describe.skipIf(!isNode)("interoperability", function () {
                 throw Error(impl.name + " is not available, but INTEROP is set")
             }
             const itIfAvailable = available ? it : it.skip
+            if (available && impl.prepare !== undefined) {
+                beforeAll(impl.prepare, 5 * 60 * 1000)
+            }
 
             const context = new TextEncoder().encode("interop test")
             itIfAvailable.for([0, 1, 100, chunkSize, chunkSize + 1, 2 * chunkSize + 500])(

@@ -2,5 +2,8 @@
     "name": "@filippo/cobblestone-encryption",
     "version": "0.1.0",
     "exports": "./lib/index.ts",
+    "publish": {
+        "include": ["lib/", "LICENSE", "README.md"]
+    },
     "license": "BSD-3-Clause"
 }
