@@ -3,10 +3,14 @@ import { gcm } from "@noble/ciphers/aes.js"
 /**
  * An AEAD with 96-bit nonces and 16-byte authentication tags. The outputs are
  * always freshly allocated.
+ *
+ * Inputs are views over a plain ArrayBuffer, because the Web Crypto API
+ * rejects views over a SharedArrayBuffer. Callers always pass buffers they
+ * allocated themselves, so nothing is copied or cast at this boundary.
  */
 export interface AEAD {
-    seal(nonce: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array<ArrayBuffer>>
-    open(nonce: Uint8Array, ciphertext: Uint8Array): Promise<Uint8Array<ArrayBuffer>>
+    seal(nonce: Uint8Array<ArrayBuffer>, plaintext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>>
+    open(nonce: Uint8Array<ArrayBuffer>, ciphertext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>>
 }
 
 export const nonceSize = 12
@@ -32,7 +36,7 @@ function subtleCrypto(): SubtleCrypto | null {
  * Returns an AES-GCM AEAD using the Web Crypto API when available, and the
  * noble implementation otherwise.
  */
-export async function aesGCM(key: Uint8Array): Promise<AEAD> {
+export async function aesGCM(key: Uint8Array<ArrayBuffer>): Promise<AEAD> {
     if (key.length !== 16 && key.length !== 32) {
         throw Error("invalid AES key size: " + key.length.toString())
     }
@@ -40,16 +44,16 @@ export async function aesGCM(key: Uint8Array): Promise<AEAD> {
     if (subtle === null) {
         return nobleAESGCM(key)
     }
-    const cryptoKey = await subtle.importKey("raw", domBuffer(key), { name: "AES-GCM" }, false, ["encrypt", "decrypt"])
+    const cryptoKey = await subtle.importKey("raw", key, { name: "AES-GCM" }, false, ["encrypt", "decrypt"])
     return {
-        async seal(nonce: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
-            const algorithm = { name: "AES-GCM", iv: domBuffer(nonce) }
-            return new Uint8Array(await subtle.encrypt(algorithm, cryptoKey, domBuffer(plaintext)))
+        async seal(nonce: Uint8Array<ArrayBuffer>, plaintext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+            const algorithm = { name: "AES-GCM", iv: nonce }
+            return new Uint8Array(await subtle.encrypt(algorithm, cryptoKey, plaintext))
         },
-        async open(nonce: Uint8Array, ciphertext: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
-            const algorithm = { name: "AES-GCM", iv: domBuffer(nonce) }
+        async open(nonce: Uint8Array<ArrayBuffer>, ciphertext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+            const algorithm = { name: "AES-GCM", iv: nonce }
             try {
-                return new Uint8Array(await subtle.decrypt(algorithm, cryptoKey, domBuffer(ciphertext)))
+                return new Uint8Array(await subtle.decrypt(algorithm, cryptoKey, ciphertext))
             } catch (error) {
                 if (error instanceof DOMException && error.name === "OperationError") {
                     throw Error("message authentication failed", { cause: error })
@@ -60,30 +64,17 @@ export async function aesGCM(key: Uint8Array): Promise<AEAD> {
     }
 }
 
-function nobleAESGCM(key: Uint8Array): AEAD {
+function nobleAESGCM(key: Uint8Array<ArrayBuffer>): AEAD {
     return {
-        seal(nonce: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
-            return Promise.resolve(nobleBuffer(gcm(key, nonce).encrypt(plaintext)))
+        seal(nonce: Uint8Array<ArrayBuffer>, plaintext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+            return Promise.resolve(gcm(key, nonce).encrypt(plaintext))
         },
-        open(nonce: Uint8Array, ciphertext: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+        open(nonce: Uint8Array<ArrayBuffer>, ciphertext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
             try {
-                return Promise.resolve(nobleBuffer(gcm(key, nonce).decrypt(ciphertext)))
+                return Promise.resolve(gcm(key, nonce).decrypt(ciphertext))
             } catch (error) {
                 return Promise.reject(Error("message authentication failed", { cause: error }))
             }
         },
     }
-}
-
-// noble allocates its outputs as plain Uint8Arrays over fresh ArrayBuffers,
-// but declares them with the generic Uint8Array type.
-function nobleBuffer(arr: Uint8Array): Uint8Array<ArrayBuffer> {
-    return arr as Uint8Array<ArrayBuffer>
-}
-
-// TypeScript 5.9+ made Uint8Array generic, defaulting to Uint8Array<ArrayBufferLike>.
-// DOM APIs like crypto.subtle require Uint8Array<ArrayBuffer> (no SharedArrayBuffer).
-// This helper narrows the type while still catching non-Uint8Array arguments.
-function domBuffer(arr: Uint8Array): Uint8Array<ArrayBuffer> {
-    return arr as Uint8Array<ArrayBuffer>
 }

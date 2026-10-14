@@ -51,7 +51,7 @@ export function ciphertextSize(plaintextSize: number): number {
     return plaintextSize + chunks * chunkOverhead
 }
 
-export function chunkNonce(baseNonce: Uint8Array, chunkIndex: number): Uint8Array {
+export function chunkNonce(baseNonce: Uint8Array, chunkIndex: number): Uint8Array<ArrayBuffer> {
     if (chunkIndex >= maxChunks) {
         throw Error("chunk counter overflow")
     }

@@ -204,7 +204,9 @@ describe("Wycheproof", function () {
                     // key and base nonce, for both instantiations.
                     if (vec.aeadKey !== undefined && vec.baseNonce !== undefined) {
                         assert.isFalse(flags.has("HeaderFailure"))
-                        const aeadKey = hex.decode(vec.aeadKey)
+                        // hex.decode is typed as a plain Uint8Array, while
+                        // aesGCM takes one over an ArrayBuffer.
+                        const aeadKey = new Uint8Array(hex.decode(vec.aeadKey))
                         const baseNonce = hex.decode(vec.baseNonce)
                         const body = ct.subarray(headerSize)
                         assert.equal(aeadKey.length, group.aead === "AEAD_AES_128_GCM" ? 16 : 32)
