@@ -1,5 +1,4 @@
-// Raw mode of c2sp.org/chunked-encryption, where key derivation is left to
-// the caller. There is no salt, no commitment, and no key commitment.
+// Raw mode of c2sp.org/chunked-encryption.
 
 import { nonceSize, tagSize, type AEAD } from "./aesgcm.js"
 import { checkBytes, copyBytes, readRange, type DecryptedBlob, type Sliceable } from "./io.js"
@@ -88,13 +87,13 @@ export function encryptChunks(aead: AEAD, baseNonce: Uint8Array): ChunkTransform
     let plaintextBufferUsed = 0
 
     return {
-        async transform(chunk, controller) {
-            checkBytes(chunk, "chunk")
-            while (chunk.length > 0) {
-                const n = Math.min(plaintextBuffer.length - plaintextBufferUsed, chunk.length)
-                plaintextBuffer.set(chunk.subarray(0, n), plaintextBufferUsed)
+        async transform(input, controller) {
+            checkBytes(input, "chunk")
+            while (input.length > 0) {
+                const n = Math.min(plaintextBuffer.length - plaintextBufferUsed, input.length)
+                plaintextBuffer.set(input.subarray(0, n), plaintextBufferUsed)
                 plaintextBufferUsed += n
-                chunk = chunk.subarray(n)
+                input = input.subarray(n)
 
                 // The final chunk is always shorter than a full chunk, so a
                 // full buffer can be encrypted right away.
@@ -122,13 +121,13 @@ export function decryptChunks(aead: AEAD, baseNonce: Uint8Array): ChunkTransform
     let ciphertextBufferUsed = 0
 
     return {
-        async transform(chunk, controller) {
-            checkBytes(chunk, "chunk")
-            while (chunk.length > 0) {
-                const n = Math.min(ciphertextBuffer.length - ciphertextBufferUsed, chunk.length)
-                ciphertextBuffer.set(chunk.subarray(0, n), ciphertextBufferUsed)
+        async transform(input, controller) {
+            checkBytes(input, "chunk")
+            while (input.length > 0) {
+                const n = Math.min(ciphertextBuffer.length - ciphertextBufferUsed, input.length)
+                ciphertextBuffer.set(input.subarray(0, n), ciphertextBufferUsed)
                 ciphertextBufferUsed += n
-                chunk = chunk.subarray(n)
+                input = input.subarray(n)
 
                 // A full encrypted chunk is never the final one, which must
                 // be shorter, so it can be decrypted and released right away.
@@ -165,9 +164,7 @@ export async function decryptChunksRandomAccess(aead: AEAD, baseNonce: Uint8Arra
         return await aead.open(chunkNonce(baseNonce, chunkIndex), ciphertext)
     }
 
-    // Decrypting the final chunk authenticates the message length. It's also
-    // the most likely chunk to be requested first, by applications seeking
-    // relative to the end of the message, so it starts out as the cached one.
+    // Decrypting the final chunk authenticates the message length.
     const finalChunkIndex = chunks - 1
     let cache = { index: finalChunkIndex, data: await readChunk(finalChunkIndex) }
 

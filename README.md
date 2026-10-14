@@ -15,18 +15,15 @@ This scheme has a fixed overhead of 56 bytes and a marginal overhead of
 approximately 0.1%.
 
 It depends only on the [noble](https://paulmillr.com/noble/) cryptography
-libraries, and uses the Web Crypto API when available (and a pure JavaScript
-AES-GCM otherwise, for example on insecure origins).
+libraries, and uses the Web Crypto API for AES-GCM when available.
 
 It is interoperable with [filippo.io/cobblestone](https://filippo.io/cobblestone)
-(Go) and [pyca/cryptography](https://cryptography.io/en/latest/cobblestone/)
-(Python), and is tested against the
-[Wycheproof test vectors](https://github.com/C2SP/wycheproof/blob/main/doc/c2sp_chunked_encryption.md).
+(Go) and [pyca/cryptography](https://cryptography.io/en/latest/cobblestone/) (Python).
 
 ## Installation
 
 This package is `cobblestone-encryption` on npm, and
-`jsr:@cobblestone/cobblestone-encryption` on JSR.
+`jsr:@filippo/cobblestone-encryption` on JSR.
 
 It's compiled for ES2023, and compatible with Node.js 22+, Bun, Deno, and all
 recent browsers.
@@ -36,7 +33,7 @@ npm install cobblestone-encryption
 ```
 
 ```sh
-deno add jsr:@cobblestone/cobblestone-encryption
+deno add jsr:@filippo/cobblestone-encryption
 ```
 
 ## Usage
@@ -93,8 +90,7 @@ console.log(await new Response(decryptedStream).text())
 The decrypted stream errors if the message was encrypted with a different key
 or context, or was modified, truncated, or extended. Each chunk of plaintext
 is authenticated before it's produced, but the message could still turn out
-to be truncated, so an application that acts on the plaintext before the
-stream ends must be prepared to discard its work.
+to be truncated until the stream closes successfully.
 
 `ciphertextSize` and `plaintextSize` compute the exact size of the output
 from the size of the input, for example to set a `Content-Length` header.

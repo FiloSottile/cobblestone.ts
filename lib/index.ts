@@ -21,8 +21,7 @@ const headerSize = /* @__PURE__ */ (() => saltSize + commitmentSize)()
  * Generate a new random key for Cobblestone-128.
  *
  * A single key can be used to encrypt a practically unlimited number of
- * messages. It must be kept secret, and must be uniformly random (never a
- * password): use this function, or the output of a KDF.
+ * messages. It must be kept secret.
  *
  * @returns A new 16-byte key.
  */
@@ -277,9 +276,9 @@ export class EncryptionStream implements ReadableWritablePair<Uint8Array<ArrayBu
                 controller.enqueue(commitment)
                 chunks = encryptChunks(aead, baseNonce)
             },
-            async transform(chunk, controller) {
+            async transform(input, controller) {
                 if (chunks === null) throw Error("internal error: transform called before start")
-                await chunks.transform(chunk, controller)
+                await chunks.transform(input, controller)
             },
             async flush(controller) {
                 if (chunks === null) throw Error("internal error: flush called before start")
@@ -298,13 +297,11 @@ export class EncryptionStream implements ReadableWritablePair<Uint8Array<ArrayBu
  * like a
  * {@link https://developer.mozilla.org/en-US/docs/Web/API/DecompressionStream | DecompressionStream}.
  *
- * The 56-byte header is processed, and the commitment checked, as soon as it
- * is received. The stream errors if the message was encrypted with a
- * different key or context, or has been modified, truncated, or extended.
- * Each chunk of the plaintext is authenticated before it's produced, but the
- * message could still turn out to be truncated: an application acting on
- * the plaintext before the stream ends must be prepared to discard its work
- * if the stream errors.
+ * The 56-byte header is processed, and the commitment checked, as soon as it is
+ * received. The stream errors if the message was encrypted with a different key
+ * or context, or has been modified, truncated, or extended. Each chunk of the
+ * plaintext is authenticated before it's produced, but the message could still
+ * turn out to be truncated until the stream closes successfully.
  */
 export class DecryptionStream implements ReadableWritablePair<Uint8Array<ArrayBuffer>, Uint8Array> {
     /**
@@ -330,18 +327,18 @@ export class DecryptionStream implements ReadableWritablePair<Uint8Array<ArrayBu
         let headerUsed = 0
         let chunks: ChunkTransformer | null = null
         const transform = new TransformStream<Uint8Array, Uint8Array<ArrayBuffer>>({
-            async transform(chunk, controller) {
+            async transform(input, controller) {
                 if (chunks === null) {
-                    checkBytes(chunk, "chunk")
-                    const n = Math.min(headerSize - headerUsed, chunk.length)
-                    header.set(chunk.subarray(0, n), headerUsed)
+                    checkBytes(input, "chunk")
+                    const n = Math.min(headerSize - headerUsed, input.length)
+                    header.set(input.subarray(0, n), headerUsed)
                     headerUsed += n
-                    chunk = chunk.subarray(n)
+                    input = input.subarray(n)
                     if (headerUsed < headerSize) return
                     const { aead, baseNonce } = await checkHeader(k, ctx, header)
                     chunks = decryptChunks(aead, baseNonce)
                 }
-                await chunks.transform(chunk, controller)
+                await chunks.transform(input, controller)
             },
             async flush(controller) {
                 if (chunks === null) {

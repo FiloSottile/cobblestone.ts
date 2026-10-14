@@ -1,13 +1,5 @@
 import { gcm } from "@noble/ciphers/aes.js"
 
-/**
- * An AEAD with 96-bit nonces and 16-byte authentication tags. The outputs are
- * always freshly allocated.
- *
- * Inputs are views over a plain ArrayBuffer, because the Web Crypto API
- * rejects views over a SharedArrayBuffer. Callers always pass buffers they
- * allocated themselves, so nothing is copied or cast at this boundary.
- */
 export interface AEAD {
     seal(nonce: Uint8Array<ArrayBuffer>, plaintext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>>
     open(nonce: Uint8Array<ArrayBuffer>, ciphertext: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>>

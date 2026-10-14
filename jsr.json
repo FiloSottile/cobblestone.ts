@@ -1,5 +1,5 @@
 {
-    "name": "@cobblestone/cobblestone-encryption",
+    "name": "@filippo/cobblestone-encryption",
     "version": "0.1.0",
     "exports": "./lib/index.ts",
     "license": "BSD-3-Clause"
